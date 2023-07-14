@@ -1,0 +1,47 @@
+name: "Environment setup"
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+# Cancel in-progress job or run for the current workflow
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Test environment setup
+    runs-on: ubuntu-latest
+    permissions:
+      # Required for all workflows
+      security-events: write
+
+      # Only required for workflows in private repositories
+      actions: read
+      contents: read
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      
+    - name: Activate vcpkg environment
+      run: |
+        . <(curl https://aka.ms/vcpkg-init.sh -L)
+        vcpkg activate vcpkg-configuration.json
+
+        # Test
+        printenv | sort
+
+        # Check tools
+        echo "AC6       : $(which armclang)"
+        echo "GCC       : $(which arm-none-eabi-gcc)"
+        echo "cbuild    : $(which cbuild)"
+        echo "cpackget  : $(which cpackget)"
+        echo "csolution : $(which csolution)"
+
+    - name: Check environment
+      run: printenv | sort
